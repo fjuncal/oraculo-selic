@@ -6,3 +6,5 @@ github.com/ibm-messaging/mq-golang/v5 v5.6.1 h1:dPu+1C+VruWJV1EYqLX2r++T3YwMHT79
 github.com/ibm-messaging/mq-golang/v5 v5.6.1/go.mod h1:xCV0vl1+ik3VyWZnwAj++2J89vSTzhXP1gXhG0X3IYE=
 github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
 github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
+github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"oraculo-selic/api"
@@ -63,8 +64,10 @@ func main() {
 
 	// Configurar e iniciar a API
 	newApi := api.NewApi(dbConn, msgService)
-	http.HandleFunc("/api/messages", newApi.CreateMessageHandler)
-	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux() // Usando um multiplexer para rotas
+	mux.HandleFunc("/api/messages", newApi.CreateMessageHandler)
+	mux.HandleFunc("/api/messages/list", newApi.GetMessagesHandler) // Novo endpoint de listagem
+	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		messageID := r.URL.Query().Get("message_id")
 		if messageID == "" {
 			http.Error(w, "Message ID é obrigatório", http.StatusBadRequest)
@@ -75,6 +78,7 @@ func main() {
 		sentStatus, arrivedStatus, processedStatus, err := newApi.CheckStatus(messageID)
 		if err != nil {
 			http.Error(w, "Erro ao verificar status", http.StatusInternalServerError)
+			log.Print(err)
 			return
 		}
 
@@ -87,6 +91,10 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	})
+
+	// Adicionar o middleware CORS às rotas
+	handler := cors.Default().Handler(mux)
+
 	log.Println("Servidor iniciado na porta 8086")
-	log.Fatal(http.ListenAndServe(":8086", nil))
+	log.Fatal(http.ListenAndServe(":8086", handler))
 }

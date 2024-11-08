@@ -53,23 +53,44 @@ func (api *API) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 func (api *API) CheckStatus(messageID string) (string, string, string, error) {
 	var sentStatus, arrivedStatus, processedStatus string
 
-	// Usando DB1 para o status de envio
-	err := api.dbConnections.DB1.QueryRow("SELECT status FROM sent_messages WHERE message_id = $1", messageID).Scan(&sentStatus)
+	// Usando DB1 para verificar o status de envio
+	err := api.dbConnections.DB1.QueryRow("SELECT status FROM messages WHERE id = $1", messageID).Scan(&sentStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
-	// Usando DB2 para o status de chegada
-	err = api.dbConnections.DB2.QueryRow("SELECT status FROM arrived_messages WHERE message_id = $1", messageID).Scan(&arrivedStatus)
+	// Usando DB2 para verificar o status de chegada
+	err = api.dbConnections.DB2.QueryRow("SELECT status FROM message_entity WHERE id = $1", messageID).Scan(&arrivedStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
-	// Usando DB3 para o status de processamento
-	err = api.dbConnections.DB3.QueryRow("SELECT status FROM processed_messages WHERE message_id = $1", messageID).Scan(&processedStatus)
+	// Usando DB3 para verificar o status de processamento
+	err = api.dbConnections.DB3.QueryRow("SELECT status FROM message_entity WHERE id = $1", messageID).Scan(&processedStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	return sentStatus, arrivedStatus, processedStatus, nil
+}
+func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := api.dbConnections.DB1.Query("SELECT id, content, status FROM messages")
+	if err != nil {
+		http.Error(w, "Erro ao buscar mensagens", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var messages []models.Message
+	for rows.Next() {
+		var message models.Message
+		if err := rows.Scan(&message.ID, &message.Content, &message.Status); err != nil {
+			http.Error(w, "Erro ao ler mensagens", http.StatusInternalServerError)
+			return
+		}
+		messages = append(messages, message)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messages)
 }
