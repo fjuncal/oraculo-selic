@@ -60,13 +60,13 @@ func (api *API) CheckStatus(messageID string) (string, string, string, error) {
 	}
 
 	// Usando DB2 para verificar o status de chegada
-	err = api.dbConnections.DB2.QueryRow("SELECT status FROM message_entity WHERE id = $1", messageID).Scan(&arrivedStatus)
+	err = api.dbConnections.DB2.QueryRow("SELECT status FROM message_entity WHERE id = $1", messageID).Scan(&processedStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	// Usando DB3 para verificar o status de processamento
-	err = api.dbConnections.DB3.QueryRow("SELECT status FROM message_entity WHERE id = $1", messageID).Scan(&processedStatus)
+	err = api.dbConnections.DB3.QueryRow("SELECT status FROM message_entity WHERE id = $1", messageID).Scan(&arrivedStatus)
 	if err != nil {
 		return "", "", "", err
 	}
