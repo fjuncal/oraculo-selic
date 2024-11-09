@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"oraculo-selic/db"
@@ -32,7 +34,7 @@ func (api *API) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Define o status inicial se não estiver presente
 	if message.Status == "" {
-		message.Status = "SENDING"
+		message.Status = "ENVIANDO"
 	}
 
 	message.DataInclusao = NowInBrazil()
@@ -72,13 +74,11 @@ func (api *API) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 func (api *API) CheckStatus(messageID string) (string, string, string, error) {
 	var sentStatus, arrivedStatus, processedStatus string
 
-	// Usando DB1 para verificar o status de envio
 	err := api.dbConnections.DB1.QueryRow("SELECT txt_status FROM mensagens WHERE id = $1", messageID).Scan(&sentStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
-	// Usando DB2 para verificar o status de chegada
 	err = api.dbConnections.DB2.QueryRow("SELECT txt_status FROM mensagens WHERE id = $1", messageID).Scan(&processedStatus)
 	if err != nil {
 		return "", "", "", err
@@ -103,7 +103,7 @@ func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var messages []models.Mensagem
+	var messages []map[string]interface{}
 	for rows.Next() {
 		var message models.Mensagem
 		if err := rows.Scan(
@@ -118,7 +118,32 @@ func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Erro ao ler mensagens", http.StatusInternalServerError)
 			return
 		}
-		messages = append(messages, message)
+
+		// Consultar o status final na base SELIC_OPE_POC (DB2)
+		var finalStatus string
+		err = api.dbConnections.DB2.QueryRow(`
+			SELECT txt_status FROM mensagens WHERE id = $1
+		`, message.ID).Scan(&finalStatus)
+
+		// Se o status não for encontrado, define um valor padrão
+		if err == sql.ErrNoRows {
+			finalStatus = "NÃO PROCESSADO" // Valor padrão para mensagens sem status final
+		} else if err != nil {
+			fmt.Println("Erro ao buscar status final na base SELIC_OPE_POC", err)
+			http.Error(w, "Erro ao buscar status final na base SELIC_OPE_POC", http.StatusInternalServerError)
+			return
+		}
+		messageMap := map[string]interface{}{
+			"id":             message.ID,
+			"codigoMensagem": message.CodigoMensagem,
+			"canal":          message.Canal,
+			"xml":            message.XML,
+			"stringSelic":    message.StringSelic,
+			"status":         message.Status,
+			"statusFinal":    finalStatus, // Status final obtido da SELIC_OPE_POC
+			"dataInclusao":   message.DataInclusao,
+		}
+		messages = append(messages, messageMap)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
