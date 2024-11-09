@@ -125,7 +125,7 @@ func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(messages)
 }
 
-func NowInBrazil() time.Time {
+func NowInBrazil() string {
 	location, _ := time.LoadLocation("America/Sao_Paulo")
-	return time.Now().In(location)
+	return time.Now().In(location).Format("2006-01-02T15:04:05")
 }
