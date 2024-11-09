@@ -25,9 +25,20 @@ func NewDb(databaseURL string) (*DB, error) {
 	return &DB{Conn: conn}, nil
 }
 
-func (db *DB) SaveMessage(message *models.Message) error {
-	query := `INSERT INTO messages (content, status) VALUES ($1, $2) RETURNING id`
-	err := db.Conn.QueryRow(query, message.Content, message.Status).Scan(&message.ID)
+func (db *DB) SaveMessage(message *models.Mensagem) error {
+	query := `
+		INSERT INTO mensagens (txt_cod_msg, txt_canal, txt_msg_doc_xml, txt_msg, txt_status, dt_incl) 
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+	`
+	err := db.Conn.QueryRow(query,
+		message.CodigoMensagem,
+		message.Canal,
+		message.XML,
+		message.StringSelic,
+		message.Status,
+		message.DataInclusao,
+	).Scan(&message.ID)
+
 	if err != nil {
 		return err
 	}
