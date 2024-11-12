@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -75,18 +76,24 @@ func (api *API) CheckStatus(correlationId string) (string, string, string, error
 	var sentStatus, arrivedStatus, processedStatus string
 
 	err := api.dbConnections.DB1.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&sentStatus)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		sentStatus = "NÃO PROCESSADO"
+	} else if err != nil {
 		return "", "", "", err
 	}
 
 	err = api.dbConnections.DB2.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&processedStatus)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		processedStatus = "NÃO PROCESSADO"
+	} else if err != nil {
 		return "", "", "", err
 	}
 
 	// Usando DB3 para verificar o status de processamento
 	err = api.dbConnections.DB3.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&arrivedStatus)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		arrivedStatus = "NÃO PROCESSADO"
+	} else if err != nil {
 		return "", "", "", err
 	}
 
