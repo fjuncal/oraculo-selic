@@ -39,7 +39,7 @@ func NewDatabaseConnections(db1Url, db2Url, db3Url string) (*DatabaseConnections
 func (dbc *DatabaseConnections) SaveMessage(message *models.Mensagem) error {
 	query := `
 		INSERT INTO mensagens (txt_cod_msg, txt_canal, txt_msg_doc_xml, txt_msg, txt_status, dt_incl) 
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, txt_correl_id
 	`
 	err := dbc.DB1.QueryRow(query,
 		message.CodigoMensagem,
@@ -48,7 +48,7 @@ func (dbc *DatabaseConnections) SaveMessage(message *models.Mensagem) error {
 		message.StringSelic,
 		message.Status,
 		message.DataInclusao,
-	).Scan(&message.ID)
+	).Scan(&message.ID, &message.CorrelationID)
 	if err != nil {
 		return fmt.Errorf("erro ao salvar mensagem: %v", err)
 	}

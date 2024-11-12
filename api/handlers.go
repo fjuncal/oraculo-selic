@@ -94,7 +94,7 @@ func (api *API) CheckStatus(messageID string) (string, string, string, error) {
 }
 func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := api.dbConnections.DB1.Query(`
-    SELECT id, txt_cod_msg, txt_canal, txt_msg_doc_xml, txt_msg, txt_status, dt_incl
+    SELECT id, txt_cod_msg, txt_canal, txt_msg_doc_xml, txt_msg, txt_status, dt_incl, txt_correl_id
     FROM mensagens
 `)
 	if err != nil {
@@ -114,6 +114,7 @@ func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			&message.StringSelic,
 			&message.Status,
 			&message.DataInclusao,
+			&message.CorrelationID,
 		); err != nil {
 			http.Error(w, "Erro ao ler mensagens", http.StatusInternalServerError)
 			return
@@ -142,6 +143,7 @@ func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			"status":         message.Status,
 			"statusFinal":    finalStatus, // Status final obtido da SELIC_OPE_POC
 			"dataInclusao":   message.DataInclusao,
+			"correlationId":  message.CorrelationID,
 		}
 		messages = append(messages, messageMap)
 	}
