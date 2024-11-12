@@ -11,6 +11,7 @@ import (
 	"oraculo-selic/db"
 	"oraculo-selic/messaging"
 	"os"
+	"runtime/debug"
 )
 
 type MessageStatus struct {
@@ -68,14 +69,15 @@ func main() {
 	mux.HandleFunc("/api/messages", newApi.CreateMessageHandler)
 	mux.HandleFunc("/api/messages/list", newApi.GetMessagesHandler) // Novo endpoint de listagem
 	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		messageID := r.URL.Query().Get("message_id")
-		if messageID == "" {
+		correlationId := r.URL.Query().Get("correlationId")
+		if correlationId == "" {
+			log.Printf("Erro: Message ID é obrigatório\nStack Trace:\n%s", debug.Stack())
 			http.Error(w, "Message ID é obrigatório", http.StatusBadRequest)
 			return
 		}
 
 		// Usar a função CheckStatus para obter os status de envio, chegada e processamento
-		sentStatus, arrivedStatus, processedStatus, err := newApi.CheckStatus(messageID)
+		sentStatus, arrivedStatus, processedStatus, err := newApi.CheckStatus(correlationId)
 		if err != nil {
 			http.Error(w, "Erro ao verificar status", http.StatusInternalServerError)
 			log.Print(err)

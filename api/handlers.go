@@ -71,21 +71,21 @@ func (api *API) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(message)
 }
 
-func (api *API) CheckStatus(messageID string) (string, string, string, error) {
+func (api *API) CheckStatus(correlationId string) (string, string, string, error) {
 	var sentStatus, arrivedStatus, processedStatus string
 
-	err := api.dbConnections.DB1.QueryRow("SELECT txt_status FROM mensagens WHERE id = $1", messageID).Scan(&sentStatus)
+	err := api.dbConnections.DB1.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&sentStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
-	err = api.dbConnections.DB2.QueryRow("SELECT txt_status FROM mensagens WHERE id = $1", messageID).Scan(&processedStatus)
+	err = api.dbConnections.DB2.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&processedStatus)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	// Usando DB3 para verificar o status de processamento
-	err = api.dbConnections.DB3.QueryRow("SELECT txt_status FROM mensagens WHERE id = $1", messageID).Scan(&arrivedStatus)
+	err = api.dbConnections.DB3.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&arrivedStatus)
 	if err != nil {
 		return "", "", "", err
 	}
