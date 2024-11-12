@@ -123,8 +123,8 @@ func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		// Consultar o status final na base SELIC_OPE_POC (DB2)
 		var finalStatus string
 		err = api.dbConnections.DB2.QueryRow(`
-			SELECT txt_status FROM mensagens WHERE id = $1
-		`, message.ID).Scan(&finalStatus)
+			SELECT txt_status FROM mensagens WHERE txt_correl_id  = $1
+		`, message.CorrelationID).Scan(&finalStatus)
 
 		// Se o status não for encontrado, define um valor padrão
 		if err == sql.ErrNoRows {
