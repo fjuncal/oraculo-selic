@@ -1,17 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"oraculo-selic/api"
 	"oraculo-selic/config"
+	"oraculo-selic/controllers"
 	"oraculo-selic/db"
 	"oraculo-selic/messaging"
+	"oraculo-selic/routes"
 	"os"
-	"runtime/debug"
 )
 
 type MessageStatus struct {
@@ -21,6 +20,7 @@ type MessageStatus struct {
 }
 
 func main() {
+	// Carregar as variáveis de ambiente e exibir
 	fmt.Println("DATABASE_URL_1:", os.Getenv("DATABASE_URL_1"))
 	fmt.Println("DATABASE_URL_2:", os.Getenv("DATABASE_URL_2"))
 	fmt.Println("DATABASE_URL_3:", os.Getenv("DATABASE_URL_3"))
@@ -29,11 +29,12 @@ func main() {
 
 	// Carregar configurações
 	cfg := config.LoadConfig()
+
+	// Configurar serviço de mensageria
+	log.Println("Configurando o serviço de mensageria...")
 	var msgService messaging.Messaging
 	var err error
 
-	// Configurar o serviço de mensageria com logs detalhados
-	log.Println("Configurando o serviço de mensageria...")
 	switch os.Getenv("MESSAGING_TYPE") {
 	case "activemq":
 		msgService, err = messaging.NewActiveMQClient(cfg.QueueURL)
@@ -45,58 +46,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Erro ao conectar ao serviço de mensageria: %v", err)
 	}
-	defer func() {
-		log.Println("Fechando a conexão com o serviço de mensageria...")
-		msgService.Close()
-	}()
+	defer msgService.Close()
 	log.Println("Conexão com o serviço de mensageria estabelecida com sucesso.")
 
-	// Conectar às três bases de dados com logs detalhados
+	// Conectar aos bancos de dados
 	log.Println("Conectando aos bancos de dados...")
 	dbConn, err := db.NewDatabaseConnections(os.Getenv("DATABASE_URL_1"), os.Getenv("DATABASE_URL_2"), os.Getenv("DATABASE_URL_3"))
 	if err != nil {
 		log.Fatalf("Erro ao conectar aos bancos de dados: %v", err)
 	}
-	defer func() {
-		log.Println("Fechando as conexões com os bancos de dados...")
-		dbConn.Close()
-	}()
+	defer dbConn.Close()
 	log.Println("Conexões com os bancos de dados estabelecidas com sucesso.")
 
-	// Configurar e iniciar a API
-	newApi := api.NewApi(dbConn, msgService)
-	mux := http.NewServeMux() // Usando um multiplexer para rotas
-	mux.HandleFunc("/api/messages", newApi.CreateMessageHandler)
-	mux.HandleFunc("/api/messages/list", newApi.GetMessagesHandler) // Novo endpoint de listagem
-	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		correlationId := r.URL.Query().Get("correlationId")
-		if correlationId == "" {
-			log.Printf("Erro: Message ID é obrigatório\nStack Trace:\n%s", debug.Stack())
-			http.Error(w, "Message ID é obrigatório", http.StatusBadRequest)
-			return
-		}
+	// Inicializar o controlador de mensagens
+	messageController := controllers.NewMessageController(dbConn, msgService)
 
-		// Usar a função CheckStatus para obter os status de envio, chegada e processamento
-		sentStatus, arrivedStatus, processedStatus, err := newApi.CheckStatus(correlationId)
-		if err != nil {
-			http.Error(w, "Erro ao verificar status", http.StatusInternalServerError)
-			log.Print(err)
-			return
-		}
-
-		response := MessageStatus{
-			Sent:      &api.APIResponse{Status: sentStatus, Detail: "Status de envio"},
-			Arrived:   &api.APIResponse{Status: arrivedStatus, Detail: "Status de chegada"},
-			Processed: &api.APIResponse{Status: processedStatus, Detail: "Status de processamento"},
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
-
-	// Adicionar o middleware CORS às rotas
-	handler := cors.Default().Handler(mux)
-
+	// Configurar e iniciar o servidor com as rotas
+	handler := routes.SetupRoutes(messageController)
 	log.Println("Servidor iniciado na porta 8086")
 	log.Fatal(http.ListenAndServe(":8086", handler))
 }

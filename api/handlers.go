@@ -13,18 +13,18 @@ import (
 	"time"
 )
 
-type API struct {
+type Api struct {
 	dbConnections *db.DatabaseConnections
 	messaging     messaging.Messaging
 }
 
-// NewApi criando nova instancia de API
-func NewApi(dbConnections *db.DatabaseConnections, messaging messaging.Messaging) *API {
-	return &API{dbConnections: dbConnections, messaging: messaging}
+// NewApi criando nova instancia de Api
+func NewApi(dbConnections *db.DatabaseConnections, messaging messaging.Messaging) *Api {
+	return &Api{dbConnections: dbConnections, messaging: messaging}
 }
 
 // CreateMessageHandler Handler para criar uma nova mensagem
-func (api *API) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (api *Api) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var message models.Mensagem
 
 	// Decodifica o JSON recebido para a estrutura Message
@@ -72,7 +72,7 @@ func (api *API) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(message)
 }
 
-func (api *API) CheckStatus(correlationId string) (string, string, string, error) {
+func (api *Api) CheckStatus(correlationId string) (string, string, string, error) {
 	var sentStatus, arrivedStatus, processedStatus string
 
 	err := api.dbConnections.DB1.QueryRow("SELECT txt_status FROM mensagens WHERE txt_correl_id = $1", correlationId).Scan(&sentStatus)
@@ -99,7 +99,7 @@ func (api *API) CheckStatus(correlationId string) (string, string, string, error
 
 	return sentStatus, arrivedStatus, processedStatus, nil
 }
-func (api *API) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
+func (api *Api) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := api.dbConnections.DB1.Query(`
     SELECT id, txt_cod_msg, txt_canal, txt_msg_doc_xml, txt_msg, txt_status, dt_incl, txt_correl_id
     FROM mensagens

@@ -2,15 +2,18 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq" // Importa o driver do PostgreSQL de forma anônima para registrá-lo
 	"log"
 	"oraculo-selic/models"
 )
 
+// DB representa a conexão com o banco de dados
 type DB struct {
 	Conn *sql.DB
 }
 
+// NewDb cria uma nova conexão com o banco de dados
 func NewDb(databaseURL string) (*DB, error) {
 	conn, err := sql.Open("postgres", databaseURL)
 	if err != nil {
@@ -43,5 +46,35 @@ func (db *DB) SaveMessage(message *models.Mensagem) error {
 		return err
 	}
 	log.Printf("Mensagem salva com ID: %d\n", message.ID)
+	return nil
+}
+
+func (db *DB) SaveCenario(cenario *models.Cenario) error {
+	query := `
+        INSERT INTO cenarios (
+            TXT_DESCRICAO, TXT_TP_CENARIO, TXT_CANAL, TXT_COD_MSG,
+            TXT_MSG_DOC_XML, TXT_MSG, TXT_CT_CED, TXT_CT_CESS, 
+            TXT_NUM_OP, TXT_EMISSOR, VAL_FIN, VAL_PU
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id
+    `
+	err := db.Conn.QueryRow(query,
+		cenario.Descricao,
+		cenario.TipoCenario,
+		cenario.Canal,
+		cenario.CodigoMsg,
+		cenario.MsgDocXML,
+		cenario.Msg,
+		cenario.ContaCedente,
+		cenario.ContaCessionario,
+		cenario.NumeroOperacao,
+		cenario.Emissor,
+		cenario.ValorFinanceiro,
+		cenario.ValorPU,
+	).Scan(&cenario.ID)
+
+	if err != nil {
+		return fmt.Errorf("erro ao salvar cenário: %v", err)
+	}
+	log.Printf("Cenário salvo com ID: %d\n", cenario.ID)
 	return nil
 }
