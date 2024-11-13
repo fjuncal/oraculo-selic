@@ -58,11 +58,13 @@ func main() {
 	defer dbConn.Close()
 	log.Println("Conexões com os bancos de dados estabelecidas com sucesso.")
 
-	// Inicializar o controlador de mensagens
 	messageController := controllers.NewMessageController(dbConn, msgService)
 
-	// Configurar e iniciar o servidor com as rotas
-	handler := routes.SetupRoutes(messageController)
+	// Aqui criamos uma instância de db.DB a partir de dbConn.DB1 e passamos para o CenarioController
+	dbInstance := &db.DB{Conn: dbConn.DB1}
+	cenarioController := controllers.NewCenarioController(dbInstance)
+
+	handler := routes.SetupRoutes(messageController, cenarioController)
 	log.Println("Servidor iniciado na porta 8086")
 	log.Fatal(http.ListenAndServe(":8086", handler))
 }
