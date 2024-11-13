@@ -9,9 +9,11 @@ CREATE TABLE mensagens (
                            DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 CREATE TABLE cenarios (
                           id SERIAL PRIMARY KEY,
+                          TXT_DESCRICAO TEXT,
+                          TXT_TP_CENARIO TEXT,
+                          TXT_CANAL TEXT,
                           TXT_COD_MSG VARCHAR(10) NOT NULL,                -- Código da mensagem, como SEL1052
                           TXT_MSG_DOC_XML TEXT,                          -- Conteúdo completo em XML
                           TXT_MSG TEXT,                          -- String completa no formato SELIC
