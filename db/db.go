@@ -78,3 +78,45 @@ func (db *DB) SaveCenario(cenario *models.Cenario) error {
 	log.Printf("Cenário salvo com ID: %d\n", cenario.ID)
 	return nil
 }
+
+func (db *DB) GetCenarios() ([]models.Cenario, error) {
+	query := `SELECT id, TXT_DESCRICAO, TXT_TP_CENARIO, TXT_CANAL, TXT_COD_MSG, 
+                     TXT_MSG_DOC_XML, TXT_MSG, TXT_CT_CED, TXT_CT_CESS, TXT_NUM_OP, 
+                     TXT_EMISSOR, VAL_FIN, VAL_PU, DT_INCL 
+              FROM cenarios`
+
+	rows, err := db.Conn.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar cenários: %v", err)
+	}
+	defer rows.Close()
+
+	var cenarios []models.Cenario
+	for rows.Next() {
+		var cenario models.Cenario
+		if err := rows.Scan(
+			&cenario.ID,
+			&cenario.Descricao,
+			&cenario.TipoCenario,
+			&cenario.Canal,
+			&cenario.CodigoMsg,
+			&cenario.MsgDocXML,
+			&cenario.Msg,
+			&cenario.ContaCedente,
+			&cenario.ContaCessionario,
+			&cenario.NumeroOperacao,
+			&cenario.Emissor,
+			&cenario.ValorFinanceiro,
+			&cenario.ValorPU,
+			&cenario.DataInclusao,
+		); err != nil {
+			return nil, fmt.Errorf("erro ao escanear cenário: %v", err)
+		}
+		cenarios = append(cenarios, cenario)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro na iteração de cenários: %v", err)
+	}
+
+	return cenarios, nil
+}

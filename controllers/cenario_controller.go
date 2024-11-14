@@ -40,3 +40,17 @@ func (cc *CenarioController) SaveCenarioHandler(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(cenario)
 }
+
+// GetCenariosHandler manipula a requisição para buscar cenários
+func (cc *CenarioController) GetCenariosHandler(w http.ResponseWriter, r *http.Request) {
+	cenarios, err := cc.DB.GetCenarios()
+	if err != nil {
+		log.Printf("Erro ao buscar cenários: %v", err)
+		http.Error(w, "Erro ao buscar cenários", http.StatusInternalServerError)
+		return
+	}
+
+	// Retorna a lista de cenários como JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(cenarios)
+}

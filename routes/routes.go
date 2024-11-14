@@ -13,6 +13,7 @@ func SetupRoutes(messageController *controllers.MessageController, cenarioContro
 	mux.HandleFunc("/status", messageController.StatusHandler)
 
 	mux.HandleFunc("/api/cenarios", cenarioController.SaveCenarioHandler)
+	mux.HandleFunc("/api/cenarios/list", cenarioController.GetCenariosHandler) // Nova rota para buscar cenários
 
 	// Adiciona suporte a CORS
 	handler := cors.Default().Handler(mux)
