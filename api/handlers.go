@@ -23,55 +23,52 @@ func NewApi(dbConnections *db.DatabaseConnections, messaging messaging.Messaging
 	return &Api{dbConnections: dbConnections, messaging: messaging}
 }
 
-// CreateMessageHandler Handler para criar uma nova mensagem
+// CreateMessageHandler Handler para criar e processar uma lista de mensagens
 func (api *Api) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
-	var message models.Mensagem
+	var request struct {
+		Cenarios []models.Cenario `json:"cenarios"`
+	}
 
-	// Decodifica o JSON recebido para a estrutura Message
-	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+	// Decodifica o JSON recebido para uma lista de cenários
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Entrada inválida", http.StatusBadRequest)
 		return
 	}
 
-	// Define o status inicial se não estiver presente
-	if message.Status == "" {
-		message.Status = "ENVIANDO"
+	for _, cenario := range request.Cenarios {
+		message := models.Mensagem{
+			CodigoMensagem: cenario.CodigoMsg,
+			Canal:          cenario.Canal,
+			XML:            cenario.MsgDocXML,
+			StringSelic:    cenario.Msg,
+			Status:         "ENVIANDO",
+			DataInclusao:   NowInBrazil(),
+		}
+
+		// Salva a mensagem no banco de dados
+		if err := api.dbConnections.SaveMessage(&message); err != nil {
+			log.Printf("Erro ao salvar mensagem no banco: %v", err)
+			http.Error(w, "Erro ao salvar a mensagem", http.StatusInternalServerError)
+			return
+		}
+
+		// Serializa e envia para a fila
+		messageJSON, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Erro ao serializar a mensagem para JSON: %v", err)
+			http.Error(w, "Erro ao preparar a mensagem para a fila", http.StatusInternalServerError)
+			return
+		}
+
+		if err := api.messaging.SendMessage("queue.RECEIVE_QUEUE", string(messageJSON)); err != nil {
+			log.Printf("Erro ao enviar mensagem para a fila: %v", err)
+			http.Error(w, "Erro ao enviar a mensagem para a fila", http.StatusInternalServerError)
+			return
+		}
 	}
-
-	message.DataInclusao = NowInBrazil()
-
-	// Salva a mensagem no banco usando a conexão DB1
-	log.Println("Salvando mensagem no banco de dados...")
-	if err := api.dbConnections.SaveMessage(&message); err != nil {
-		log.Printf("Erro ao salvar mensagem no banco: %v", err)
-		http.Error(w, "Erro ao salvar a mensagem", http.StatusInternalServerError)
-		return
-	}
-	log.Println("Mensagem salva com sucesso no banco de dados.")
-
-	// Serializa o objeto para JSON para envio na fila
-	messageJSON, err := json.Marshal(message)
-	if err != nil {
-		log.Printf("Erro ao serializar a mensagem para JSON: %v", err)
-		http.Error(w, "Erro ao preparar a mensagem para a fila", http.StatusInternalServerError)
-		return
-	}
-	messageJSONString := string(messageJSON)
-
-	// Envia o objeto JSON completo para a fila de processamento
-	log.Println("Enviando mensagem para a fila...")
-	if err := api.messaging.SendMessage("queue.RECEIVE_QUEUE", messageJSONString); err != nil {
-		log.Printf("Erro ao enviar mensagem para a fila: %v", err)
-		http.Error(w, "Erro ao enviar a mensagem para a fila", http.StatusInternalServerError)
-		return
-	}
-	log.Println("Mensagem enviada com sucesso para a fila.")
-
-	// Retorna a mensagem como resposta com status 201 Created
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(message)
+	w.Write([]byte(`{"message": "Cenários enviados com sucesso"}`))
 }
-
 func (api *Api) CheckStatus(correlationId string) (string, string, string, error) {
 	var sentStatus, arrivedStatus, processedStatus string
 
