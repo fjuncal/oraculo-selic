@@ -14,5 +14,5 @@ type Cenario struct {
 	Emissor          string  `json:"emissor" db:"TXT_EMISSOR"`
 	ValorFinanceiro  float64 `json:"valorFinanceiro" db:"VAL_FIN"`
 	ValorPU          float64 `json:"precoUnitario" db:"VAL_PU"`
-	DataInclusao     string  `json:"data_inclusao" db:"DT_INCL"`
+	DataInclusao     string  `json:"dataInclusao" db:"DT_INCL"`
 }
