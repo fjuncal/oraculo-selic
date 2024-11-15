@@ -6,14 +6,14 @@ import (
 	"oraculo-selic/controllers"
 )
 
-func SetupRoutes(messageController *controllers.MessageController, cenarioController *controllers.CenarioController) http.Handler {
+func SetupRoutes(messageController *controllers.MessageController, passoTesteController *controllers.PassoTesteController) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/messages", messageController.CreateMessageHandler)
 	mux.HandleFunc("/api/messages/list", messageController.GetMessagesHandler)
 	mux.HandleFunc("/status", messageController.StatusHandler)
 
-	mux.HandleFunc("/api/cenarios", cenarioController.SaveCenarioHandler)
-	mux.HandleFunc("/api/cenarios/list", cenarioController.GetCenariosHandler) // Nova rota para buscar cenários
+	mux.HandleFunc("/api/passo-teste", passoTesteController.SavePassoTesteHandler)
+	mux.HandleFunc("/api/passo-teste/list", passoTesteController.GetPassoTesteHandler)
 
 	// Adiciona suporte a CORS
 	handler := cors.Default().Handler(mux)

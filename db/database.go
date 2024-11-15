@@ -36,6 +36,7 @@ func NewDatabaseConnections(db1Url, db2Url, db3Url string) (*DatabaseConnections
 	}, nil
 }
 
+// SaveMessage função para salvar mensagem no banco
 func (dbc *DatabaseConnections) SaveMessage(message *models.Mensagem) error {
 	query := `
 		INSERT INTO mensagens (txt_cod_msg, txt_canal, txt_msg_doc_xml, txt_msg, txt_status, dt_incl) 
@@ -55,6 +56,7 @@ func (dbc *DatabaseConnections) SaveMessage(message *models.Mensagem) error {
 	return nil
 }
 
+// Close função para fechar conexão com os bancos de dados
 func (dbc *DatabaseConnections) Close() {
 	dbc.DB1.Close()
 	dbc.DB2.Close()

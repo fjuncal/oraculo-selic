@@ -26,7 +26,7 @@ func NewApi(dbConnections *db.DatabaseConnections, messaging messaging.Messaging
 // CreateMessageHandler Handler para criar e processar uma lista de mensagens
 func (api *Api) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		Cenarios []models.Cenario `json:"cenarios"`
+		PassoTeste []models.PassoTeste `json:"passoTeste"`
 	}
 
 	// Decodifica o JSON recebido para uma lista de cenários
@@ -35,12 +35,12 @@ func (api *Api) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, cenario := range request.Cenarios {
+	for _, passoTeste := range request.PassoTeste {
 		message := models.Mensagem{
-			CodigoMensagem: cenario.CodigoMsg,
-			Canal:          cenario.Canal,
-			XML:            cenario.MsgDocXML,
-			StringSelic:    cenario.Msg,
+			CodigoMensagem: passoTeste.CodigoMsg,
+			Canal:          passoTeste.Canal,
+			XML:            passoTeste.MsgDocXML,
+			StringSelic:    passoTeste.Msg,
 			Status:         "ENVIANDO",
 			DataInclusao:   NowInBrazil(),
 		}

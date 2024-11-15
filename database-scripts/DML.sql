@@ -1,4 +1,4 @@
-CREATE TABLE mensagens (
+CREATE TABLE MENSAGENS (
                            id SERIAL PRIMARY KEY,
                            TXT_CORREL_ID UUID DEFAULT uuid_generate_v4(),   -- Identificador único, gerado automaticamente na criação
                            TXT_COD_MSG VARCHAR(50) NOT NULL,
@@ -9,10 +9,10 @@ CREATE TABLE mensagens (
                            DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE cenarios (
+CREATE TABLE PASSO_TESTE (
                           id SERIAL PRIMARY KEY,
                           TXT_DESCRICAO TEXT,
-                          TXT_TP_CENARIO TEXT,
+                          TXT_TP_PASSO_TESTE TEXT,
                           TXT_CANAL TEXT,
                           TXT_COD_MSG VARCHAR(10) NOT NULL,                -- Código da mensagem, como SEL1052
                           TXT_MSG_DOC_XML TEXT,                          -- Conteúdo completo em XML

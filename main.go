@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"oraculo-selic/api"
 	"oraculo-selic/config"
 	"oraculo-selic/controllers"
 	"oraculo-selic/db"
@@ -12,12 +11,6 @@ import (
 	"oraculo-selic/routes"
 	"os"
 )
-
-type MessageStatus struct {
-	Sent      *api.APIResponse `json:"sent"`
-	Arrived   *api.APIResponse `json:"arrived"`
-	Processed *api.APIResponse `json:"processed"`
-}
 
 func main() {
 	// Carregar as variáveis de ambiente e exibir
@@ -60,11 +53,11 @@ func main() {
 
 	messageController := controllers.NewMessageController(dbConn, msgService)
 
-	// Aqui criamos uma instância de db.DB a partir de dbConn.DB1 e passamos para o CenarioController
+	// Aqui criamos uma instância de db.DB a partir de dbConn.DB1 e passamos para o PassoTesteController
 	dbInstance := &db.DB{Conn: dbConn.DB1}
-	cenarioController := controllers.NewCenarioController(dbInstance)
+	passoTesteController := controllers.NewPassoTesteController(dbInstance)
 
-	handler := routes.SetupRoutes(messageController, cenarioController)
+	handler := routes.SetupRoutes(messageController, passoTesteController)
 	log.Println("Servidor iniciado na porta 8086")
 	log.Fatal(http.ListenAndServe(":8086", handler))
 }

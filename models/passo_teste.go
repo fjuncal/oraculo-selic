@@ -1,9 +1,9 @@
 package models
 
-type Cenario struct {
+type PassoTeste struct {
 	ID               int     `json:"id" db:"id"`
 	Descricao        string  `json:"descricao" db:"TXT_DESCRICAO"`
-	TipoCenario      string  `json:"tipoCenario" db:"TXT_TP_CENARIO"`
+	TipoPassoTeste   string  `json:"tipoPassoTeste" db:"TXT_TP_PASSO_TESTE"`
 	Canal            string  `json:"canal" db:"TXT_CANAL"`
 	CodigoMsg        string  `json:"codigoMsg" db:"TXT_COD_MSG"`
 	MsgDocXML        string  `json:"xml" db:"TXT_MSG_DOC_XML"`
