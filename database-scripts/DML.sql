@@ -25,3 +25,18 @@ CREATE TABLE PASSOS_TESTES (
                           VAL_PU NUMERIC(10, 2),    -- Valor financeiro de retorno, se aplicável
                           DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE CENARIOS (
+                          id SERIAL PRIMARY KEY,
+                          TXT_NOME VARCHAR(255) NOT NULL, -- Nome do cenário
+                          TXT_DESCRICAO TEXT,             -- Descrição do cenário
+                          DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE CENARIOS_PASSOS_TESTES (
+                                        ID_CENARIO INTEGER NOT NULL REFERENCES CENARIOS(id) ON DELETE CASCADE,
+                                        ID_PASSO_TESTE INTEGER NOT NULL REFERENCES PASSOS_TESTES(id) ON DELETE CASCADE,
+                                        ORDENACAO INTEGER,             -- Ordem do passo dentro do cenário
+                                        DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                        PRIMARY KEY (ID_CENARIO, ID_PASSO_TESTE)
+);
