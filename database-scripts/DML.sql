@@ -9,7 +9,7 @@ CREATE TABLE MENSAGENS (
                            DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE PASSO_TESTE (
+CREATE TABLE PASSOS_TESTES (
                           id SERIAL PRIMARY KEY,
                           TXT_DESCRICAO TEXT,
                           TXT_TP_PASSO_TESTE TEXT,

@@ -16,7 +16,7 @@ type DB struct {
 // SavePassoTeste método para salvar passo teste no banco
 func (db *DB) SavePassoTeste(passoTeste *models.PassoTeste) error {
 	query := `
-        INSERT INTO PASSO_TESTE (
+        INSERT INTO PASSOS_TESTES (
             TXT_DESCRICAO, TXT_TP_PASSO_TESTE, TXT_CANAL, TXT_COD_MSG,
             TXT_MSG_DOC_XML, TXT_MSG, TXT_CT_CED, TXT_CT_CESS, 
             TXT_NUM_OP, TXT_EMISSOR, VAL_FIN, VAL_PU
@@ -49,7 +49,7 @@ func (db *DB) GetPassoTeste() ([]models.PassoTeste, error) {
 	query := `SELECT id, TXT_DESCRICAO, TXT_TP_PASSO_TESTE, TXT_CANAL, TXT_COD_MSG, 
                      TXT_MSG_DOC_XML, TXT_MSG, TXT_CT_CED, TXT_CT_CESS, TXT_NUM_OP, 
                      TXT_EMISSOR, VAL_FIN, VAL_PU, DT_INCL 
-              FROM PASSO_TESTE`
+              FROM PASSOS_TESTES`
 
 	rows, err := db.Conn.Query(query)
 	if err != nil {
