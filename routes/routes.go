@@ -16,9 +16,10 @@ func SetupRoutes(messageController *controllers.MessageController, passoTesteCon
 	mux.HandleFunc("/api/passo-teste/list", passoTesteController.GetPassoTesteHandler)
 
 	// Rotas de cenários
-	mux.HandleFunc("/api/cenarios", cenarioController.SaveCenarioHandler)
+	mux.HandleFunc("/api/cenarios/save", cenarioController.SaveCenarioHandler)
 	mux.HandleFunc("/api/cenarios/relacionar", cenarioController.SaveRelacionamentoHandler)
 	mux.HandleFunc("/api/cenarios/list", cenarioController.GetCenariosHandler)
+	//mux.HandleFunc("/api/cenarios/passo-teste", cenarioController.GetCenariosWithPassosTestesHandler)
 
 	// Adiciona suporte a CORS
 	handler := cors.Default().Handler(mux)

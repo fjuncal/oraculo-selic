@@ -47,7 +47,14 @@ func (cc *CenarioController) GetCenariosHandler(w http.ResponseWriter, r *http.R
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cenarios)
+	w.WriteHeader(http.StatusOK)
+
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(cenarios); err != nil {
+		log.Printf("Erro ao codificar JSON: %v", err)
+		http.Error(w, "Erro ao gerar resposta", http.StatusInternalServerError)
+	}
 }
 
 // SaveRelacionamentoHandler salva ou atualiza os relacionamentos entre cenários e passos testes
@@ -77,3 +84,15 @@ func (cc *CenarioController) SaveRelacionamentoHandler(w http.ResponseWriter, r 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Relacionamentos salvos com sucesso"))
 }
+
+//func (cc *CenarioController) GetCenariosWithPassosTestesHandler(w http.ResponseWriter, r *http.Request) {
+//	cenarios, err := cc.Repo.GetAllWithPassosTestes()
+//	if err != nil {
+//		log.Printf("Erro ao buscar cenários com passos testes: %v", err)
+//		http.Error(w, "Erro ao buscar cenários", http.StatusInternalServerError)
+//		return
+//	}
+//
+//	w.Header().Set("Content-Type", "application/json")
+//	json.NewEncoder(w).Encode(cenarios)
+//}

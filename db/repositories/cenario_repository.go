@@ -50,10 +50,17 @@ func (repo *CenarioRepository) Save(cenario *models.Cenario) error {
 func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 	rows, err := repo.DB.Query(`
 		SELECT 
-			c.id, c.TXT_DESCRICAO, c.TXT_TP_CENARIO, c.DT_INCL,
-			COALESCE(cp.id_passo_teste, 0) AS passo_id, COALESCE(cp.ordenacao, 0) AS ordenacao,
-			COALESCE(pt.id, 0) AS passo_id, COALESCE(pt.TXT_DESCRICAO, '') AS passo_descricao, 
-			COALESCE(pt.TXT_TP_PASSO_TESTE, '') AS tipo_passo_teste, COALESCE(pt.TXT_COD_MSG, '') AS codigo_msg
+			c.id AS cenario_id,
+			c.TXT_DESCRICAO AS cenario_descricao,
+			c.TXT_TP_CENARIO AS cenario_tipo,
+			c.DT_INCL AS cenario_data_incl,
+			cp.id_cenario,
+			cp.id_passo_teste,
+			cp.ordenacao,
+			pt.id AS passo_teste_id,
+			pt.TXT_DESCRICAO AS passo_teste_descricao,
+			pt.TXT_TP_PASSO_TESTE AS passo_teste_tipo,
+			pt.TXT_COD_MSG AS passo_teste_codigo
 		FROM CENARIOS c
 		LEFT JOIN CENARIOS_PASSOS_TESTES cp ON c.id = cp.id_cenario
 		LEFT JOIN PASSOS_TESTES pt ON cp.id_passo_teste = pt.id
@@ -64,60 +71,81 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 	}
 	defer rows.Close()
 
-	var cenarios []models.Cenario
-	cenarioMap := make(map[int]*models.Cenario)
+	var (
+		cenarioMap = make(map[int]*models.Cenario)
+		cenarios   []models.Cenario
+	)
 
 	for rows.Next() {
 		var (
 			cenarioID           int
-			cenario             models.Cenario
-			cenarioPassoTeste   models.CenariosPassosTestes
-			passoTeste          models.PassoTeste
-			passoTesteID        int
-			ordenacao           int
-			passoTesteDescricao string
-			tipoPassoTeste      string
-			codigoMsg           string
+			cenarioDescricao    string
+			cenarioTipo         string
+			cenarioDataIncl     sql.NullTime
+			idCenario           sql.NullInt64
+			idPassoTeste        sql.NullInt64
+			ordenacao           sql.NullInt64
+			passoTesteID        sql.NullInt64
+			passoTesteDescricao sql.NullString
+			passoTesteTipo      sql.NullString
+			passoTesteCodigo    sql.NullString
 		)
 
 		err := rows.Scan(
 			&cenarioID,
-			&cenario.Descricao, &cenario.Tipo, &cenario.DataInclusao,
-			&passoTesteID, &ordenacao,
-			&passoTeste.ID, &passoTesteDescricao, &tipoPassoTeste, &codigoMsg,
+			&cenarioDescricao,
+			&cenarioTipo,
+			&cenarioDataIncl,
+			&idCenario,
+			&idPassoTeste,
+			&ordenacao,
+			&passoTesteID,
+			&passoTesteDescricao,
+			&passoTesteTipo,
+			&passoTesteCodigo,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		// Evita duplicação de cenários
-		existingCenario, exists := cenarioMap[cenarioID]
+		// Verificar se o cenário já existe no mapa
+		cenario, exists := cenarioMap[cenarioID]
 		if !exists {
-			cenario.ID = cenarioID
-			cenario.CenariosPassosTestes = []models.CenariosPassosTestes{}
-			cenario.PassosTestes = []models.PassoTeste{}
-			cenarioMap[cenarioID] = &cenario
-			cenarios = append(cenarios, cenario)
-		} else {
-			cenario = *existingCenario
+			cenario = &models.Cenario{
+				ID:                   cenarioID,
+				Descricao:            cenarioDescricao,
+				Tipo:                 cenarioTipo,
+				DataInclusao:         cenarioDataIncl.Time.Format("2006-01-02 15:04:05"),
+				PassosTestes:         []models.PassoTeste{},
+				CenariosPassosTestes: []models.CenariosPassosTestes{},
+			}
+			cenarioMap[cenarioID] = cenario
 		}
 
-		// Adiciona os passos testes associados, se existir
-		if passoTesteID != 0 {
-			cenarioPassoTeste = models.CenariosPassosTestes{
-				CenarioID:    cenarioID,
-				PassoTesteID: passoTesteID,
-				Ordenacao:    ordenacao,
+		// Adicionar PassoTeste ao cenário, se houver
+		if passoTesteID.Valid {
+			passoTeste := models.PassoTeste{
+				ID:             int(passoTesteID.Int64),
+				Descricao:      passoTesteDescricao.String,
+				TipoPassoTeste: passoTesteTipo.String,
+				CodigoMsg:      passoTesteCodigo.String,
 			}
-			cenario.CenariosPassosTestes = append(cenario.CenariosPassosTestes, cenarioPassoTeste)
-
-			// Adiciona detalhes do passo teste
-			passoTeste.ID = passoTesteID
-			passoTeste.Descricao = passoTesteDescricao
-			passoTeste.TipoPassoTeste = tipoPassoTeste
-			passoTeste.CodigoMsg = codigoMsg
 			cenario.PassosTestes = append(cenario.PassosTestes, passoTeste)
 		}
+
+		// Adicionar relação ao CenariosPassosTestes, se existir
+		if idCenario.Valid && idPassoTeste.Valid {
+			cenario.CenariosPassosTestes = append(cenario.CenariosPassosTestes, models.CenariosPassosTestes{
+				CenarioID:    int(idCenario.Int64),
+				PassoTesteID: int(idPassoTeste.Int64),
+				Ordenacao:    int(ordenacao.Int64),
+			})
+		}
+	}
+
+	// Converter o mapa para um slice
+	for _, cenario := range cenarioMap {
+		cenarios = append(cenarios, *cenario)
 	}
 
 	return cenarios, nil
@@ -156,3 +184,85 @@ func (repo *CenarioRepository) SaveOrUpdateRelacionamentos(relacionamentos []mod
 
 	return tx.Commit()
 }
+
+//func (repo *CenarioRepository) GetAllWithPassosTestes() ([]models.Cenario, error) {
+//	rows, err := repo.DB.Query(`
+//		SELECT
+//			c.id AS cenario_id,
+//			c.txt_descricao AS cenario_descricao,
+//			c.txt_tp_cenario AS cenario_tipo,
+//			c.dt_incl AS cenario_data_inclusao,
+//			pt.id AS passo_teste_id,
+//			pt.txt_descricao AS passo_teste_descricao,
+//			pt.txt_cod_msg AS passo_teste_codigo_msg,
+//			pt.txt_tp_passo_teste AS passo_teste_tipo,
+//			pt.dt_incl AS passo_teste_data_inclusao
+//		FROM cenarios c
+//		LEFT JOIN cenarios_passos_testes cpt ON c.id = cpt.id_cenario
+//		LEFT JOIN passos_testes pt ON cpt.id_passo_teste = pt.id
+//		ORDER BY c.id, cpt.ordenacao
+//	`)
+//	if err != nil {
+//		return nil, err
+//	}
+//	defer rows.Close()
+//
+//	var cenarios []models.Cenario
+//	cenarioMap := make(map[int]*models.Cenario)
+//
+//	for rows.Next() {
+//		var (
+//			cenarioID           int
+//			cenarioDescricao    string
+//			cenarioTipo         string
+//			cenarioDataInclusao sql.NullTime
+//			passoTesteID        sql.NullInt64
+//			passoTesteDescricao sql.NullString
+//			passoTesteCodigoMsg sql.NullString
+//			passoTesteTipo      sql.NullString
+//			passoTesteDataIncl  sql.NullTime
+//		)
+//
+//		err := rows.Scan(
+//			&cenarioID,
+//			&cenarioDescricao,
+//			&cenarioTipo,
+//			&cenarioDataInclusao,
+//			&passoTesteID,
+//			&passoTesteDescricao,
+//			&passoTesteCodigoMsg,
+//			&passoTesteTipo,
+//			&passoTesteDataIncl,
+//		)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		// Evita duplicação de cenários
+//		cenario, exists := cenarioMap[cenarioID]
+//		if !exists {
+//			cenario = &models.Cenario{
+//				ID:           cenarioID,
+//				Descricao:    cenarioDescricao,
+//				Tipo:         cenarioTipo,
+//				DataInclusao: cenarioDataInclusao.Time.Format("2006-01-02T15:04:05Z07:00"),
+//				PassosTestes: []models.PassoTeste{},
+//			}
+//			cenarioMap[cenarioID] = cenario
+//			cenarios = append(cenarios, *cenario)
+//		}
+//
+//		// Adiciona passo teste se existir
+//		if passoTesteID.Valid {
+//			cenario.PassosTestes = append(cenario.PassosTestes, models.PassoTeste{
+//				ID:             int(passoTesteID.Int64),
+//				Descricao:      passoTesteDescricao.String,
+//				CodigoMsg:      passoTesteCodigoMsg.String,
+//				TipoPassoTeste: passoTesteTipo.String,
+//				DataInclusao:   passoTesteDataIncl.Time.Format("2006-01-02T15:04:05Z07:00"),
+//			})
+//		}
+//	}
+//
+//	return cenarios, nil
+//}
