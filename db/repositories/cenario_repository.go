@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"log"
 	"oraculo-selic/models"
 )
 
@@ -185,7 +184,6 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 		cenarios = append(cenarios, *cenario)
 	}
 
-	log.Printf("Cenarios finais com todos os detalhes: %+v", cenarios)
 	return cenarios, nil
 }
 
