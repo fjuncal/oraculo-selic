@@ -26,16 +26,27 @@ func NewApi(dbConnections *db.DatabaseConnections, messaging messaging.Messaging
 // CreateMessageHandler Handler para criar e processar uma lista de mensagens
 func (api *Api) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		PassoTeste []models.PassoTeste `json:"passoTeste"`
+		Descricao    string              `json:"descricao"`
+		Tipo         string              `json:"tipo"`
+		PassosTestes []models.PassoTeste `json:"passosTestes"`
 	}
 
-	// Decodifica o JSON recebido para uma lista de cenários
+	// Decodifica o JSON recebido
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		log.Printf("Erro ao decodificar request: %v", err)
 		http.Error(w, "Entrada inválida", http.StatusBadRequest)
 		return
 	}
 
-	for _, passoTeste := range request.PassoTeste {
+	// Verifica se existem passos testes no cenário
+	if len(request.PassosTestes) == 0 {
+		log.Printf("Nenhum passo teste fornecido no cenário")
+		http.Error(w, "Cenário sem passos testes", http.StatusBadRequest)
+		return
+	}
+
+	// Processa cada passo teste no cenário
+	for _, passoTeste := range request.PassosTestes {
 		message := models.Mensagem{
 			CodigoMensagem: passoTeste.CodigoMsg,
 			Canal:          passoTeste.Canal,
@@ -66,9 +77,12 @@ func (api *Api) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// Responde com sucesso
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"message": "Cenários enviados com sucesso"}`))
+	w.Write([]byte(`{"message": "Cenário enviado com sucesso"}`))
 }
+
 func (api *Api) CheckStatus(correlationId string) (string, string, string, error) {
 	var sentStatus, arrivedStatus, processedStatus string
 
