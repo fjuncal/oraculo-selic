@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"log"
 	"oraculo-selic/models"
 )
 
@@ -60,7 +61,16 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 			pt.id AS passo_teste_id,
 			pt.TXT_DESCRICAO AS passo_teste_descricao,
 			pt.TXT_TP_PASSO_TESTE AS passo_teste_tipo,
-			pt.TXT_COD_MSG AS passo_teste_codigo
+			pt.TXT_COD_MSG AS passo_teste_codigo,
+			pt.TXT_MSG_DOC_XML AS passo_teste_xml,
+			pt.TXT_MSG AS passo_teste_string_selic,
+			pt.TXT_CT_CED AS passo_teste_conta_cedente,
+			pt.TXT_CT_CESS AS passo_teste_conta_cessionario,
+			pt.TXT_NUM_OP AS passo_teste_num_operacao,
+			pt.TXT_EMISSOR AS passo_teste_emissor,
+			pt.VAL_FIN AS passo_teste_valor_financeiro,
+			pt.VAL_PU AS passo_teste_preco_unitario,
+			pt.DT_INCL AS passo_teste_data_inclusao
 		FROM CENARIOS c
 		LEFT JOIN CENARIOS_PASSOS_TESTES cp ON c.id = cp.id_cenario
 		LEFT JOIN PASSOS_TESTES pt ON cp.id_passo_teste = pt.id
@@ -78,17 +88,26 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 
 	for rows.Next() {
 		var (
-			cenarioID           int
-			cenarioDescricao    string
-			cenarioTipo         string
-			cenarioDataIncl     sql.NullTime
-			idCenario           sql.NullInt64
-			idPassoTeste        sql.NullInt64
-			ordenacao           sql.NullInt64
-			passoTesteID        sql.NullInt64
-			passoTesteDescricao sql.NullString
-			passoTesteTipo      sql.NullString
-			passoTesteCodigo    sql.NullString
+			cenarioID                 int
+			cenarioDescricao          string
+			cenarioTipo               string
+			cenarioDataIncl           sql.NullTime
+			idCenario                 sql.NullInt64
+			idPassoTeste              sql.NullInt64
+			ordenacao                 sql.NullInt64
+			passoTesteID              sql.NullInt64
+			passoTesteDescricao       sql.NullString
+			passoTesteTipo            sql.NullString
+			passoTesteCodigo          sql.NullString
+			passoTesteXML             sql.NullString
+			passoTesteString          sql.NullString
+			passoTesteCedente         sql.NullString
+			passoTesteCessionario     sql.NullString
+			passoTesteNumOperacao     sql.NullString
+			passoTesteEmissor         sql.NullString
+			passoTesteValorFinanceiro sql.NullFloat64
+			passoTestePrecoUnitario   sql.NullFloat64
+			passoTesteDataIncl        sql.NullTime
 		)
 
 		err := rows.Scan(
@@ -103,6 +122,15 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 			&passoTesteDescricao,
 			&passoTesteTipo,
 			&passoTesteCodigo,
+			&passoTesteXML,
+			&passoTesteString,
+			&passoTesteCedente,
+			&passoTesteCessionario,
+			&passoTesteNumOperacao,
+			&passoTesteEmissor,
+			&passoTesteValorFinanceiro,
+			&passoTestePrecoUnitario,
+			&passoTesteDataIncl,
 		)
 		if err != nil {
 			return nil, err
@@ -125,10 +153,19 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 		// Adicionar PassoTeste ao cenário, se houver
 		if passoTesteID.Valid {
 			passoTeste := models.PassoTeste{
-				ID:             int(passoTesteID.Int64),
-				Descricao:      passoTesteDescricao.String,
-				TipoPassoTeste: passoTesteTipo.String,
-				CodigoMsg:      passoTesteCodigo.String,
+				ID:               int(passoTesteID.Int64),
+				Descricao:        passoTesteDescricao.String,
+				TipoPassoTeste:   passoTesteTipo.String,
+				CodigoMsg:        passoTesteCodigo.String,
+				MsgDocXML:        passoTesteXML.String,
+				Msg:              passoTesteString.String,
+				ContaCedente:     passoTesteCedente.String,
+				ContaCessionario: passoTesteCessionario.String,
+				NumeroOperacao:   passoTesteNumOperacao.String,
+				Emissor:          passoTesteEmissor.String,
+				ValorFinanceiro:  passoTesteValorFinanceiro.Float64,
+				ValorPU:          passoTestePrecoUnitario.Float64,
+				DataInclusao:     passoTesteDataIncl.Time.Format("2006-01-02 15:04:05"),
 			}
 			cenario.PassosTestes = append(cenario.PassosTestes, passoTeste)
 		}
@@ -148,6 +185,7 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 		cenarios = append(cenarios, *cenario)
 	}
 
+	log.Printf("Cenarios finais com todos os detalhes: %+v", cenarios)
 	return cenarios, nil
 }
 
