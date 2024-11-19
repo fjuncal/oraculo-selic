@@ -49,3 +49,31 @@ func (cc *CenarioController) GetCenariosHandler(w http.ResponseWriter, r *http.R
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(cenarios)
 }
+
+// SaveRelacionamentoHandler salva ou atualiza os relacionamentos entre cenários e passos testes
+func (cc *CenarioController) SaveRelacionamentoHandler(w http.ResponseWriter, r *http.Request) {
+	var relacionamentos []models.CenariosPassosTestes
+
+	// Decodifica o corpo da requisição
+	if err := json.NewDecoder(r.Body).Decode(&relacionamentos); err != nil {
+		log.Printf("Erro ao decodificar relacionamentos: %v", err)
+		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		return
+	}
+
+	// Validação básica
+	if len(relacionamentos) == 0 || relacionamentos[0].CenarioID == 0 {
+		http.Error(w, "Cenário ou passos testes inválidos", http.StatusBadRequest)
+		return
+	}
+
+	// Atualiza os relacionamentos no banco
+	if err := cc.Repo.SaveOrUpdateRelacionamentos(relacionamentos); err != nil {
+		log.Printf("Erro ao salvar relacionamentos: %v", err)
+		http.Error(w, "Erro ao salvar relacionamentos", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Relacionamentos salvos com sucesso"))
+}

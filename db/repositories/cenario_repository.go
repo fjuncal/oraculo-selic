@@ -122,3 +122,37 @@ func (repo *CenarioRepository) GetAll() ([]models.Cenario, error) {
 
 	return cenarios, nil
 }
+
+// SaveOrUpdateRelacionamentos atualiza os relacionamentos entre um cenário e seus passos testes
+func (repo *CenarioRepository) SaveOrUpdateRelacionamentos(relacionamentos []models.CenariosPassosTestes) error {
+	if len(relacionamentos) == 0 {
+		return nil
+	}
+
+	tx, err := repo.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Remove os relacionamentos existentes para o cenário
+	cenarioID := relacionamentos[0].CenarioID
+	_, err = tx.Exec("DELETE FROM CENARIOS_PASSOS_TESTES WHERE id_cenario = $1", cenarioID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Insere os novos relacionamentos
+	for _, rel := range relacionamentos {
+		_, err := tx.Exec(
+			"INSERT INTO CENARIOS_PASSOS_TESTES (id_cenario, id_passo_teste, ordenacao) VALUES ($1, $2, $3)",
+			rel.CenarioID, rel.PassoTesteID, rel.Ordenacao,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
