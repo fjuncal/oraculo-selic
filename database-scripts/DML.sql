@@ -28,7 +28,7 @@ CREATE TABLE PASSOS_TESTES (
 
 CREATE TABLE CENARIOS (
                           id SERIAL PRIMARY KEY,
-                          TXT_NOME VARCHAR(255) NOT NULL, -- Nome do cenário
+                          TXT_TP_CENARIO VARCHAR(255) NOT NULL, -- tipo do cenário
                           TXT_DESCRICAO TEXT,             -- Descrição do cenário
                           DT_INCL TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

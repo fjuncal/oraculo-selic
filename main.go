@@ -7,6 +7,7 @@ import (
 	"oraculo-selic/config"
 	"oraculo-selic/controllers"
 	"oraculo-selic/db"
+	"oraculo-selic/db/repositories"
 	"oraculo-selic/messaging"
 	"oraculo-selic/routes"
 	"os"
@@ -57,7 +58,10 @@ func main() {
 	dbInstance := &db.DB{Conn: dbConn.DB1}
 	passoTesteController := controllers.NewPassoTesteController(dbInstance)
 
-	handler := routes.SetupRoutes(messageController, passoTesteController)
+	cenarioRepository := repositories.NewCenarioRepository(dbConn.DB1)
+	cenarioController := controllers.NewCenarioController(cenarioRepository)
+
+	handler := routes.SetupRoutes(messageController, passoTesteController, cenarioController)
 	log.Println("Servidor iniciado na porta 8086")
 	log.Fatal(http.ListenAndServe(":8086", handler))
 }
