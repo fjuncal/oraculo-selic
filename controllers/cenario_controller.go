@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"oraculo-selic/db/repositories"
 	"oraculo-selic/models"
+	"oraculo-selic/utils"
 	"strconv"
 )
 
@@ -171,13 +172,17 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) ([]models.Ce
 			continue
 		}
 
-		var passosTestes []models.PassoTeste
-		var headers map[string]int
-		var seqIndex int
-		var headersCenario map[string]int
-		var cenario models.Cenario
+		// Inicializa variáveis específicas para esta aba
+		passosTestes := []models.PassoTeste{}
+		headers := make(map[string]int)
+		headersCenario := make(map[string]int)
 
-		// Processar as linhas da aba
+		// Cria um novo cenário para cada aba
+		cenario := models.Cenario{
+			Descricao: fmt.Sprintf("Cenário gerado da aba %s", sheet),
+			Tipo:      "Importação",
+		}
+
 		for i, row := range rows {
 			if len(row) == 0 {
 				// Ignorar linhas vazias
@@ -194,10 +199,9 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) ([]models.Ce
 			}
 
 			if containsLinhaDescricaoCenario(row) {
-				cenario = models.Cenario{
-					Descricao: getCellValue(row, headersCenario, "Descrição Cenário"),
-					Tipo:      getCellValue(row, headersCenario, "Tipo Cenário"),
-				}
+				cenario.Descricao = getCellValue(row, headersCenario, "Descrição Cenário")
+				cenario.Tipo = getCellValue(row, headersCenario, "Tipo Cenário")
+				continue
 			}
 
 			if i == 0 || containsSeq(row) {
@@ -207,24 +211,19 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) ([]models.Ce
 					headers[col] = idx
 				}
 				log.Printf("Cabeçalhos identificados na aba '%s': %v", sheet, headers)
-				seqIndex = headers["Seq."]
 				continue
 			}
 
-			// Verifica se a linha é válida e contém informações suficientes
-			if len(row) < len(headers) || row[seqIndex] == "" {
+			if len(row) < len(headers) || headers["Seq."] >= len(row) || row[headers["Seq."]] == "" {
 				log.Printf("Linha %d ignorada na aba '%s': %v", i, sheet, row)
 				continue
 			}
 
-			// Processa cada linha subsequente como um passo teste
 			passo := models.PassoTeste{
 				Descricao:        getCellValue(row, headers, "Descrição"),
 				TipoPassoTeste:   getCellValue(row, headers, "TipoPassoTeste"),
 				Canal:            getCellValue(row, headers, "Canal"),
 				CodigoMsg:        getCellValue(row, headers, "Operação"),
-				MsgDocXML:        getCellValue(row, headers, "MsgDocXML"),
-				Msg:              getCellValue(row, headers, "Msg"),
 				ContaCedente:     getCellValue(row, headers, "Conta Cedente"),
 				ContaCessionario: getCellValue(row, headers, "Conta Cessionária"),
 				NumeroOperacao:   getCellValue(row, headers, "Número Comando"),
@@ -232,13 +231,39 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) ([]models.Ce
 				ValorFinanceiro:  parseFloat(getCellValue(row, headers, "Valor Financeiro")),
 				ValorPU:          parseFloat(getCellValue(row, headers, "PU")),
 			}
+
+			// Gerar mensagem para o passo teste
+			codigoMsg := getCellValue(row, headers, "Operação")
+			dados := map[string]interface{}{
+				"Emissor":           passo.Emissor,
+				"Número Comando":    passo.NumeroOperacao,
+				"Conta Cedente":     passo.ContaCedente,
+				"Conta Cessionária": passo.ContaCessionario,
+				"Valor Financeiro":  passo.ValorFinanceiro,
+				"PU":                passo.ValorPU,
+			}
+
+			msg, err := utils.GerarMensagem(passo.Canal, codigoMsg, dados)
+			if err != nil {
+				log.Printf("Erro ao gerar mensagem para passo teste na aba '%s': %v", sheet, err)
+				continue
+			}
+
+			if passo.Canal == "IOS" {
+				passo.Msg = msg
+			} else {
+				passo.MsgDocXML = msg
+			}
+
 			passosTestes = append(passosTestes, passo)
 		}
 
-		// Associa os passos testes ao cenário
+		// Verifica se a aba contém passos testes e adiciona ao cenário
 		if len(passosTestes) > 0 {
 			cenario.PassosTestes = passosTestes
 			cenarios = append(cenarios, cenario)
+		} else {
+			log.Printf("Nenhum passo teste encontrado na aba '%s'", sheet)
 		}
 	}
 
