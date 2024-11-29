@@ -2,16 +2,21 @@ package repositories
 
 import (
 	"database/sql"
+	"oraculo-selic/db"
 	"oraculo-selic/models"
 )
 
 type CenarioRepository struct {
-	DB *sql.DB
+	DB      *sql.DB
+	PassoDB *db.DB // Acesso ao método SavePassoTeste
 }
 
 // NewCenarioRepository cria uma nova instância de CenarioRepository
-func NewCenarioRepository(db *sql.DB) *CenarioRepository {
-	return &CenarioRepository{DB: db}
+func NewCenarioRepository(db *sql.DB, passoDB *db.DB) *CenarioRepository {
+	return &CenarioRepository{
+		DB:      db,
+		PassoDB: passoDB,
+	}
 }
 
 // Save salva um novo cenário no banco de dados

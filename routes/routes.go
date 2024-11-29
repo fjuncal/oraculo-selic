@@ -19,6 +19,8 @@ func SetupRoutes(messageController *controllers.MessageController, passoTesteCon
 	mux.HandleFunc("/api/cenarios/save", cenarioController.SaveCenarioHandler)
 	mux.HandleFunc("/api/cenarios/relacionar", cenarioController.SaveRelacionamentoHandler)
 	mux.HandleFunc("/api/cenarios/list", cenarioController.GetCenariosHandler)
+	mux.HandleFunc("/api/cenarios/upload", cenarioController.UploadPlanilhaHandler)
+
 	//mux.HandleFunc("/api/cenarios/passo-teste", cenarioController.GetCenariosWithPassosTestesHandler)
 
 	// Adiciona suporte a CORS

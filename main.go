@@ -58,7 +58,7 @@ func main() {
 	dbInstance := &db.DB{Conn: dbConn.DB1}
 	passoTesteController := controllers.NewPassoTesteController(dbInstance)
 
-	cenarioRepository := repositories.NewCenarioRepository(dbConn.DB1)
+	cenarioRepository := repositories.NewCenarioRepository(dbConn.DB1, dbInstance)
 	cenarioController := controllers.NewCenarioController(cenarioRepository)
 
 	handler := routes.SetupRoutes(messageController, passoTesteController, cenarioController)
