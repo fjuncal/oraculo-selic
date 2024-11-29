@@ -152,7 +152,7 @@ func (cc *CenarioController) UploadPlanilhaHandler(w http.ResponseWriter, r *htt
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(cenarios)
+	json.NewEncoder(w).Encode(cenariosSalvos)
 }
 
 func (cc *CenarioController) processarPlanilha(file multipart.File) ([]models.Cenario, error) {
