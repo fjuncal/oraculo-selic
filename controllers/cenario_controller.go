@@ -108,6 +108,9 @@ func (cc *CenarioController) UploadPlanilhaHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// Lista para armazenar os cenários salvos
+	var cenariosSalvos []models.Cenario
+
 	// Iterar sobre os cenários e salvar no banco
 	for _, cenario := range cenarios {
 		// Salvar o cenário
@@ -119,9 +122,10 @@ func (cc *CenarioController) UploadPlanilhaHandler(w http.ResponseWriter, r *htt
 
 		// Salvar os passos testes e criar os relacionamentos
 		var relacionamentos []models.CenariosPassosTestes
-		for i, passo := range cenario.PassosTestes {
+		for i := range cenario.PassosTestes {
+			passo := &cenario.PassosTestes[i] // Atualizamos o passo diretamente no slice
 			// Salvar passo teste
-			if err := cc.Repo.PassoDB.SavePassoTeste(&passo); err != nil {
+			if err := cc.Repo.PassoDB.SavePassoTeste(passo); err != nil {
 				log.Printf("Erro ao salvar passo teste '%s': %v", passo.Descricao, err)
 				http.Error(w, "Erro ao salvar passos testes", http.StatusInternalServerError)
 				return
@@ -142,6 +146,9 @@ func (cc *CenarioController) UploadPlanilhaHandler(w http.ResponseWriter, r *htt
 			http.Error(w, "Erro ao salvar relacionamentos", http.StatusInternalServerError)
 			return
 		}
+
+		// Adicionar o cenário salvo à lista
+		cenariosSalvos = append(cenariosSalvos, cenario)
 	}
 
 	w.WriteHeader(http.StatusCreated)
