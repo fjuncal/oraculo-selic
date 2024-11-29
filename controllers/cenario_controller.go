@@ -168,6 +168,7 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) (models.Cena
 	var headers map[string]int
 	var seqIndex int
 	var headersCenario map[string]int
+	var cenario models.Cenario
 
 	// Processar as linhas da planilha
 	for i, row := range rows {
@@ -183,6 +184,13 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) (models.Cena
 			}
 			log.Printf("Cabeçalhos de cenário identificados: %v", headersCenario)
 			continue
+		}
+
+		if containsLinhaDescricaoCenario(row) {
+			cenario = models.Cenario{
+				Descricao: getCellValue(row, headersCenario, "Descrição Cenário"),
+				Tipo:      getCellValue(row, headersCenario, "Tipo Cenário"),
+			}
 		}
 
 		if i == 0 || containsSeq(row) {
@@ -220,12 +228,16 @@ func (cc *CenarioController) processarPlanilha(file multipart.File) (models.Cena
 		passosTestes = append(passosTestes, passo)
 	}
 
-	cenario := models.Cenario{
-		Descricao: "Cenário importado",
-		Tipo:      "Importação",
-	}
-
 	return cenario, passosTestes, nil
+}
+
+func containsLinhaDescricaoCenario(row []string) bool {
+	for _, col := range row {
+		if col == "***" {
+			return true
+		}
+	}
+	return false
 }
 
 func containsCabecalhoCenario(row []string) bool {
