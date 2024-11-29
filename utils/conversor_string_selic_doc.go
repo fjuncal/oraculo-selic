@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Estrutura base do XML
+// Doc Estrutura base do XML
 type Doc struct {
 	XMLName xml.Name `xml:"DOC"`
 	Xmlns   string   `xml:"xmlns,attr"`
@@ -18,52 +18,57 @@ type BCMSG struct {
 	DomSist            string `xml:"DomSist"`
 }
 
+// SISMSG ajustada para receber um conteúdo genérico diretamente
 type SISMSG struct {
-	Content interface{} `xml:",any"` // Elemento dinâmico baseado no código da mensagem
+	XMLName xml.Name        `xml:"SISMSG"`
+	Content *GenericMessage // Aponta diretamente para a mensagem genérica
 }
 
-// Estrutura genérica para mensagens como SEL1052, SEL1054
+// GenericMessage Estrutura específica para mensagens como SEL1052, SEL1054
 type GenericMessage struct {
-	XMLName  xml.Name   `xml:"-"` // Nome do elemento dinâmico (ex.: SEL1052, SEL1054)
-	Elements []XMLField `xml:",any"`
-}
-type XMLField struct {
-	XMLName xml.Name
-	Value   string `xml:",chardata"`
+	XMLName xml.Name `xml:""` // Permite a definição dinâmica do nome do elemento
+	Emi     string   `xml:"Emi"`
+	NUOp    string   `xml:"NUOp"`
+	CtCed   string   `xml:"ctCed"`
+	CtCes   string   `xml:"ctCes"`
+	VlrFin  string   `xml:"VlrFinanc"`
+	Pu      string   `xml:"Pu"`
 }
 
 // GerarMensagem recebe dados genéricos para gerar uma mensagem baseada no canal.
 func GerarMensagem(canal string, codigoMsg string, dados map[string]interface{}) (string, error) {
 	if canal == "IOS" {
-		// Gera mensagem posicional (exemplo simplificado)
+		// Gera mensagem posicional
 		return gerarStringPosicional(dados), nil
 	}
 
-	// Para mensageria, gera XML dinâmico
-	content := GenericMessage{
-		XMLName:  xml.Name{Local: codigoMsg},
-		Elements: []XMLField{},
+	// Adiciona o prefixo `SEL` ao código da mensagem
+	codigoComPrefixo := "SEL" + codigoMsg
+
+	// Cria a estrutura para o corpo da mensagem
+	content := &GenericMessage{
+		XMLName: xml.Name{Local: codigoComPrefixo},
+		Emi:     fmt.Sprintf("%v", dados["Emissor"]),
+		NUOp:    fmt.Sprintf("%v", dados["Número Comando"]),
+		CtCed:   fmt.Sprintf("%v", dados["Conta Cedente"]),
+		CtCes:   fmt.Sprintf("%v", dados["Conta Cessionária"]),
+		VlrFin:  fmt.Sprintf("%v", dados["Valor Financeiro"]),
+		Pu:      fmt.Sprintf("%v", dados["PU"]),
 	}
 
-	// Preenche os elementos dinâmicos
-	for key, value := range dados {
-		content.Elements = append(content.Elements, XMLField{
-			XMLName: xml.Name{Local: key},
-			Value:   fmt.Sprintf("%v", value),
-		})
-	}
-
+	// Monta o documento completo
 	doc := Doc{
-		Xmlns: "http://www.bcb.gov.br/SPB/" + codigoMsg + ".xsd",
+		Xmlns: "http://www.bcb.gov.br/SPB/" + codigoComPrefixo + ".xsd",
 		BCMSG: BCMSG{
 			IdentdDestinatario: "00038121",
 			DomSist:            "SPB01",
 		},
 		SISMSG: SISMSG{
-			Content: content,
+			Content: content, // Usa o conteúdo diretamente
 		},
 	}
 
+	// Serializa para XML
 	xmlBytes, err := xml.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("erro ao gerar XML: %v", err)
